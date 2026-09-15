@@ -38,6 +38,8 @@ Frontend tự cập nhật khi lưu file; sau khi sửa Python, dừng dev rồi
 
 Canvas hiện là **hình tĩnh**, chưa phải game chơi được. API kết quả trả **501 chưa triển khai**, không giả báo đã lưu.
 
+Bản thử của trưởng nhóm đã có vòng lặp vẽ lại, nhân vật giữ nguyên vị trí. Mở `http://localhost:5173/?demo=loop` để xem bộ đếm; giải thích và kết quả kiểm tra ở [LEAD_01_DEMO.md](docs/LEAD_01_DEMO.md).
+
 ## Các thư mục
 
 - `frontend/src/pages/`: màn hình React.
