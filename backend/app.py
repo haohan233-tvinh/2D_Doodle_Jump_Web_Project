@@ -4,7 +4,8 @@ import click
 from flask import Flask, jsonify
 from werkzeug.exceptions import HTTPException
 
-from .db import init_db
+from .db import init_db, close_db
+from .errors import APIError
 from .routes.config import config_api
 from .routes.runs import runs_api
 
@@ -16,6 +17,16 @@ def create_app(test_config=None):
         app.config.update(test_config)
     app.register_blueprint(config_api)
     app.register_blueprint(runs_api)
+
+    app.teardown_appcontext(close_db)
+
+    @app.errorhandler(APIError)
+    def handle_api_error(error):
+        return jsonify(error={
+            "code": error.code,
+            "message": error.message,
+            "details": error.details,
+        }), error.status_code
 
     @app.errorhandler(HTTPException)
     def http_error(error):
