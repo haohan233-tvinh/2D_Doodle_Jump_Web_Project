@@ -1,14 +1,16 @@
-:root {
-  font-family: Arial, sans-serif;
-  color: #222;
-  background: #f5f5f5;
-}
-
+:root { font-family: Arial, sans-serif; color: #443e35; background: #eee7dc; }
 * { box-sizing: border-box; }
 body { margin: 0; }
-main { max-width: 672px; margin: 32px auto; padding: 0 16px; text-align: center; }
-h1 { margin: 0 0 16px; font-size: 26px; }
-canvas { display: block; width: 100%; height: auto; border: 1px solid #bbb; border-radius: 4px; }
-.caption { margin: 12px 0 0; color: #666; font-size: 14px; }
+main { width: 100%; min-height: 100vh; min-height: 100dvh; display: grid; place-content: center; text-align: center; }
+.game-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.game-stage {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  width: min(100vw, calc(100dvh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  background: #f5eee4 url('/images/game-background.png') center / cover no-repeat;
+}
+canvas { display: block; width: 100%; height: 100%; }
+.caption { position: absolute; left: 16px; bottom: 12px; margin: 0; padding: 8px 12px; color: #514b42; background: rgb(255 250 240 / 90%); text-align: left; font-size: clamp(10px, 1.5vw, 14px); }
 button { padding: 8px 16px; font: inherit; cursor: pointer; }
 button:focus-visible { outline: 2px solid #43765c; outline-offset: 3px; }
