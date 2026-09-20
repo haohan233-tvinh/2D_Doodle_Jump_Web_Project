@@ -22,13 +22,17 @@ export function createGame(canvas, config, { onFrame } = {}) {
     previousTime = time;
 
     // FE-01 cập nhật vị trí ngang; engine chỉ điều phối.
-    updateHorizontal(state.player, Number(input.state.right) - Number(input.state.left), dt);
+    const direction = Number(input.state.right) - Number(input.state.left);
+    updateHorizontal(state.player, direction, dt);
 
     handleScreenWrap(state.player, canvas.width);
     updatePlatforms(state.world, dt);
     applyPhysics(state.player, dt);
     handlePlatformCollisions(state.player, state.world.platforms);
-    state.world.cameraY = Math.min(state.world.cameraY, state.player.y - canvas.height * 0.4);
+    // Camera chỉ cuộn lên; giữ nhân vật ở khoảng 40% chiều cao màn hình.
+    const cameraTargetY = state.player.y - canvas.height * 0.4;
+    state.world.cameraY = Math.min(state.world.cameraY, cameraTargetY);
+    // Bản demo tự tạo lượt mới khi nhân vật rơi khỏi khung nhìn.
     if (state.player.y - state.world.cameraY > canvas.height + state.player.height) {
       state.player = createPlayer();
       state.world = createWorld();

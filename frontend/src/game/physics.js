@@ -9,10 +9,19 @@ export function applyPhysics(player, dt) {
   player.y += player.vy * dt;
 }
 export function handlePlatformCollisions(player, platforms) {
-  const landing = platforms.filter(p => !p.broken && isLandingOnPlatform(player, p)).sort((a,b) => a.y-b.y)[0];
+  // Khi rơi qua nhiều bệ trong một frame, chạm bệ cao nhất trước.
+  let landing = null;
+  for (const platform of platforms) {
+    if (platform.broken || !isLandingOnPlatform(player, platform)) continue;
+    if (!landing || platform.y < landing.y) landing = platform;
+  }
   if (!landing) return null;
+
+  const bounceMultiplier = landing.type === 'bouncy'
+    ? (landing.bounceMultiplier || 1.45)
+    : 1;
   player.y = landing.y - player.height;
-  player.vy = JUMP_VELOCITY * (landing.type === 'bouncy' ? landing.bounceMultiplier || 1.45 : 1);
+  player.vy = JUMP_VELOCITY * bounceMultiplier;
   if (landing.type === 'fragile') landing.broken = true;
   return landing;
 }
