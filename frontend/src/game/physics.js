@@ -1,22 +1,31 @@
-// PHYS-01 · Hoàng Hải Minh
-// Cần export applyPhysics(player, dt): lưu prevY, cập nhật vy rồi y.
-// Đơn vị giây, pixel và pixel/giây. Chưa viết collision trong PR đầu.
-import { GRAVITY, MAX_VELOCITY } from './index.js';
+// Canvas coordinates: positive Y points down. Horizontal movement belongs to FE-01.
+import { isLandingOnPlatform } from './collision.js';
+export const GRAVITY = 1200;
+export const MAX_VY = 900;
+export const JUMP_VELOCITY = -520;
+export function applyPhysics(player, dt) {
+  player.prevY = player.y;
+  player.vy = Math.min(MAX_VY, player.vy + GRAVITY * dt);
+  player.y += player.vy * dt;
+}
+export function handlePlatformCollisions(player, platforms) {
+  // Khi rơi qua nhiều bệ trong một frame, chạm bệ cao nhất trước.
+  let landing = null;
+  for (const platform of platforms) {
+    if (platform.broken || !isLandingOnPlatform(player, platform)) continue;
+    if (!landing || platform.y < landing.y) landing = platform;
+  }
+  if (!landing) return null;
 
-export const Kinematics = {
-    velocityAt: (v0, g, t) => v0 - g * t,
-    positionAt: (y0, v0, g, t) => y0 + v0 * t - 0.5 * g * t * t,
-    peakTime: (v0, g) => v0 / g,
-    maxHeight: (v0, g) => (v0 * v0) / (2 * g),
-    airTime: (v0, g) => (2 * v0) / g,
-    range: (vx, v0, g) => vx * ((2 * v0) / g)
-};
-
-export function applyPhysics(body, dt) {
-    body.vy += GRAVITY * dt;
-    if (body.vy > MAX_VELOCITY) {
-        body.vy = MAX_VELOCITY;
-    }
-    body.x += body.vx * dt;
-    body.y += body.vy * dt;
+  const bounceMultiplier = landing.type === 'bouncy'
+    ? (landing.bounceMultiplier || 1.45)
+    : 1;
+  player.y = landing.y - player.height;
+  player.vy = JUMP_VELOCITY * bounceMultiplier;
+  if (landing.type === 'fragile') landing.broken = true;
+  return landing;
+}
+export function handleScreenWrap(player, width) {
+  if (player.x > width) player.x = -player.width;
+  else if (player.x + player.width < 0) player.x = width;
 }

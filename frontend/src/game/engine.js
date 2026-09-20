@@ -1,11 +1,14 @@
-import { createPlayer } from './player.js';
-import { createWorld } from './world.js';
+import { createInput } from './input.js';
+import { createPlayer, updateHorizontal } from './player.js';
+import { applyPhysics, handlePlatformCollisions, handleScreenWrap } from './physics.js';
+import { createWorld, updatePlatforms } from './world.js';
 import { render } from './render.js';
 
 // LEAD-01: điều phối việc cập nhật và vẽ; không xử lý di chuyển ở đây.
 export function createGame(canvas, config, { onFrame } = {}) {
   const context = canvas.getContext('2d');
   const state = { player: createPlayer(), world: createWorld(), config };
+  const input = createInput();
   let previousTime = null;
   let frameCount = 0;
   let stopped = false;
@@ -18,8 +21,22 @@ export function createGame(canvas, config, { onFrame } = {}) {
     const dt = previousTime === null ? 0 : Math.min(Math.max((time - previousTime) / 1000, 0), 1 / 30);
     previousTime = time;
 
-    // B. Sau này gọi hàm trái/phải, vật lý... của các bạn tại đây.
-    // Hiện chưa ghép hàm nào, nên vị trí nhân vật giữ nguyên.
+    // FE-01 cập nhật vị trí ngang; engine chỉ điều phối.
+    const direction = Number(input.state.right) - Number(input.state.left);
+    updateHorizontal(state.player, direction, dt);
+
+    handleScreenWrap(state.player, canvas.width);
+    updatePlatforms(state.world, dt);
+    applyPhysics(state.player, dt);
+    handlePlatformCollisions(state.player, state.world.platforms);
+    // Camera chỉ cuộn lên; giữ nhân vật ở khoảng 40% chiều cao màn hình.
+    const cameraTargetY = state.player.y - canvas.height * 0.4;
+    state.world.cameraY = Math.min(state.world.cameraY, cameraTargetY);
+    // Bản demo tự tạo lượt mới khi nhân vật rơi khỏi khung nhìn.
+    if (state.player.y - state.world.cameraY > canvas.height + state.player.height) {
+      state.player = createPlayer();
+      state.world = createWorld();
+    }
 
     // C. Vẽ lại rồi hẹn trình duyệt chạy khung tiếp theo.
     render(context, state);
@@ -33,6 +50,7 @@ export function createGame(canvas, config, { onFrame } = {}) {
     destroy() {
       if (stopped) return;
       stopped = true;
+      input.destroy();
       cancelAnimationFrame(frameId);
       context.clearRect(0, 0, canvas.width, canvas.height);
     },
