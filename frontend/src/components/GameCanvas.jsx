@@ -15,10 +15,10 @@ export default function GameCanvas({ config, showLoopDemo = false }) {
     return () => game.destroy();
   }, [config, showLoopDemo]);
   return <div className="game-stage">
-    <canvas ref={canvasRef} width="960" height="540" aria-label="Khung game ngang 16:9 với nhân vật đứng trên bệ">Trình duyệt cần hỗ trợ Canvas 2D.</canvas>
+    <canvas ref={canvasRef} width="960" height="540" aria-label="Khung game ngang 16:9, dùng A/D hoặc phím trái/phải để di chuyển">Trình duyệt cần hỗ trợ Canvas 2D.</canvas>
     {showLoopDemo && <p className="caption">
       Đã vẽ lại: <output aria-label="Số khung đã vẽ" aria-live="off">{frameCount}</output> lần.
-      <br />Số tăng = vòng lặp đang chạy. Nhân vật vẫn đứng im.
+      <br />Số tăng = vòng lặp đang chạy. Dùng A/D hoặc ←/→ để thử di chuyển.
     </p>}
   </div>;
 }

@@ -1,4 +1,5 @@
-import { createPlayer } from './player.js';
+import { createInput } from './input.js';
+import { createPlayer, updateHorizontal } from './player.js';
 import { createWorld } from './world.js';
 import { render } from './render.js';
 
@@ -6,6 +7,7 @@ import { render } from './render.js';
 export function createGame(canvas, config, { onFrame } = {}) {
   const context = canvas.getContext('2d');
   const state = { player: createPlayer(), world: createWorld(), config };
+  const input = createInput();
   let previousTime = null;
   let frameCount = 0;
   let stopped = false;
@@ -18,8 +20,8 @@ export function createGame(canvas, config, { onFrame } = {}) {
     const dt = previousTime === null ? 0 : Math.min(Math.max((time - previousTime) / 1000, 0), 1 / 30);
     previousTime = time;
 
-    // B. Sau này gọi hàm trái/phải, vật lý... của các bạn tại đây.
-    // Hiện chưa ghép hàm nào, nên vị trí nhân vật giữ nguyên.
+    // FE-01 cập nhật vị trí ngang; engine chỉ điều phối.
+    updateHorizontal(state.player, Number(input.state.right) - Number(input.state.left), dt);
 
     // C. Vẽ lại rồi hẹn trình duyệt chạy khung tiếp theo.
     render(context, state);
@@ -33,6 +35,7 @@ export function createGame(canvas, config, { onFrame } = {}) {
     destroy() {
       if (stopped) return;
       stopped = true;
+      input.destroy();
       cancelAnimationFrame(frameId);
       context.clearRect(0, 0, canvas.width, canvas.height);
     },

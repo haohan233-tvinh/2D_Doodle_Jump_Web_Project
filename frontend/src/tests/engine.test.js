@@ -54,6 +54,32 @@ it.each([30, 60, 144])('vẽ liên tục ở %i khung/giây mà không đổi v�
   game.destroy();
 });
 
+it('nối bàn phím vào di chuyển ngang, dừng khi thả phím hoặc mất focus', () => {
+  const game = createGame(canvas, {});
+  tick(0);
+  const player = render.mock.lastCall[1].player;
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyD' }));
+  tick(25);
+  expect(player.x).toBe(306);
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowLeft' }));
+  tick(50);
+  expect(player.x).toBe(306);
+  window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyD' }));
+  tick(75);
+  expect(player.x).toBe(300);
+  window.dispatchEvent(new KeyboardEvent('keyup', { code: 'ArrowLeft' }));
+  tick(100);
+  expect(player.x).toBe(300);
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA' }));
+  window.dispatchEvent(new Event('blur'));
+  tick(125);
+  expect(player.x).toBe(300);
+  expect(player.y).toBe(388);
+  const remove = vi.spyOn(window, 'removeEventListener');
+  game.destroy();
+  for (const event of ['keydown', 'keyup', 'blur']) expect(remove).toHaveBeenCalledWith(event, expect.any(Function));
+});
+
 it('giới hạn dt khi quay lại sau 10 giây và không cho dt âm', () => {
   const onFrame = vi.fn();
   const game = createGame(canvas, {}, { onFrame });
