@@ -13,7 +13,7 @@ export default function GamePage() {
     </div>}
     {backend.config && <>
       <GameCanvas config={backend.config} showLoopDemo={showLoopDemo} />
-      <p className="caption">Di chuyển: A / D hoặc ← / →.</p>
+      <p className="caption">A / D hoặc ← / → để di chuyển. Tự bật khi chạm bệ; rơi khỏi màn hình sẽ chơi lại.</p>
     </>}
   </>;
 }

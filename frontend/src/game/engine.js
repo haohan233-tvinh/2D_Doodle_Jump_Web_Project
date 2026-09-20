@@ -1,6 +1,7 @@
 import { createInput } from './input.js';
 import { createPlayer, updateHorizontal } from './player.js';
-import { createWorld } from './world.js';
+import { applyPhysics, handlePlatformCollisions, handleScreenWrap } from './physics.js';
+import { createWorld, updatePlatforms } from './world.js';
 import { render } from './render.js';
 
 // LEAD-01: điều phối việc cập nhật và vẽ; không xử lý di chuyển ở đây.
@@ -22,6 +23,16 @@ export function createGame(canvas, config, { onFrame } = {}) {
 
     // FE-01 cập nhật vị trí ngang; engine chỉ điều phối.
     updateHorizontal(state.player, Number(input.state.right) - Number(input.state.left), dt);
+
+    handleScreenWrap(state.player, canvas.width);
+    updatePlatforms(state.world, dt);
+    applyPhysics(state.player, dt);
+    handlePlatformCollisions(state.player, state.world.platforms);
+    state.world.cameraY = Math.min(state.world.cameraY, state.player.y - canvas.height * 0.4);
+    if (state.player.y - state.world.cameraY > canvas.height + state.player.height) {
+      state.player = createPlayer();
+      state.world = createWorld();
+    }
 
     // C. Vẽ lại rồi hẹn trình duyệt chạy khung tiếp theo.
     render(context, state);

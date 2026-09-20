@@ -6,6 +6,8 @@ import { render } from '../game/render.js';
 import GameCanvas from '../components/GameCanvas.jsx';
 
 vi.mock('../game/render.js', () => ({ render: vi.fn() }));
+// Isolate scheduling/input. Real physics integration has its own tests.
+vi.mock('../game/physics.js', () => ({ applyPhysics: vi.fn(), handlePlatformCollisions: vi.fn(), handleScreenWrap: vi.fn() }));
 
 let pending;
 let canvas;

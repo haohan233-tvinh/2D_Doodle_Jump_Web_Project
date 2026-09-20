@@ -10,10 +10,7 @@ export function checkAABB(rect1, rect2) {
 }
 
 export function isLandingOnPlatform(player, platform) {
-  if (player.vy <= 0) return false;
-  if (!checkAABB(player, platform)) return false;
-  const playerBottom = player.y + player.height;
-  const platformCenterY = platform.y + platform.height / 2;
-
-  return playerBottom <= platformCenterY;
+  return player.vy > 0 && Number.isFinite(player.prevY) &&
+    player.x < platform.x + platform.width && player.x + player.width > platform.x &&
+    player.prevY + player.height <= platform.y && player.y + player.height >= platform.y;
 }
