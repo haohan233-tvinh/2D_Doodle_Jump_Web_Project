@@ -2,6 +2,105 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getJson } from '../services/api.js';
 import { createGame } from '../game/engine.js';
 
+// 0. COMPONENT TOP BAR (Thanh điều hướng tối trên cùng: Logo, Timer, Hint, Nút Chơi lại)
+export function TopBar({ elapsedMs = 0, phase = 'ready', onTogglePause, onRestart }) {
+  const seconds = (Math.max(0, elapsedMs) / 1000).toFixed(1);
+  return (
+    <header className="game-top-bar" aria-label="Thanh điều hướng trò chơi">
+      <div className="top-bar-left">
+        <div className="top-bar-pill pill-brand">
+          <span role="img" aria-label="frog">🐸</span> 2D Doodle Jump
+        </div>
+        <div className="top-bar-pill pill-timer">
+          <span role="img" aria-label="stopwatch">⏱️</span> {seconds}s
+        </div>
+      </div>
+
+      <div className="top-bar-center">
+        <div className="top-bar-pill pill-hint">
+          Phím điều khiển: <kbd>A</kbd> / <kbd>D</kbd> hoặc <kbd>←</kbd> / <kbd>→</kbd>
+        </div>
+      </div>
+
+      <div className="top-bar-right">
+        {onTogglePause && (
+          <button
+            type="button"
+            className="btn-top-bar btn-top-pause"
+            onClick={onTogglePause}
+            title="Tạm dừng / Tiếp tục (ESC)"
+            aria-label="Tạm dừng hoặc tiếp tục ván chơi"
+          >
+            {phase === 'paused' ? '▶ Tiếp tục' : '⏸ Tạm dừng'}
+          </button>
+        )}
+        {onRestart && (
+          <button
+            type="button"
+            className="btn-top-bar btn-top-restart"
+            onClick={onRestart}
+            title="Chơi lại ván mới"
+            aria-label="Chơi lại ván mới"
+          >
+            🔄 Chơi lại
+          </button>
+        )}
+      </div>
+    </header>
+  );
+}
+
+// 0.1 COMPONENT FLOATING HUD (Thẻ nổi Kỷ lục & Đua top lơ lửng trên Canvas)
+export function FloatingHUD({ currentHeight = 0, maxHeight = 0, nickname = 'Bạn' }) {
+  const displayCurrent = Math.max(0, Math.round(currentHeight));
+  const displayMax = Math.max(displayCurrent, Math.round(maxHeight));
+
+  const mockRanking = [
+    { rank: 1, name: 'Thầy Sơn', height: Math.max(displayCurrent, 177) },
+    { rank: 2, name: 'Thầy Nam', height: Math.max(displayCurrent, 177) },
+    { rank: 3, name: nickname || 'Bạn', height: displayCurrent, isPlayer: true },
+    { rank: 4, name: 'Thầy Hiệp', height: Math.min(displayCurrent, 177) },
+    { rank: 5, name: 'Thầy Việt', height: Math.min(displayCurrent, 177) },
+  ];
+
+  return (
+    <>
+      {/* Thẻ Kỷ lục & Hiện tại ở góc trên bên trái */}
+      <div className="floating-hud-score" aria-label="Thông số độ cao">
+        <div className="floating-score-row score-row-high">
+          <span>🏆</span>
+          <span>Kỷ lục: {displayMax}m</span>
+        </div>
+        <div className="floating-score-row score-row-current">
+          <span>🚀</span>
+          <span>Hiện tại: {displayCurrent}m</span>
+        </div>
+      </div>
+
+      {/* Thẻ ĐUA TOP ở góc trên bên phải */}
+      <div className="floating-hud-ranking" aria-label="Bảng đua top">
+        <div className="floating-ranking-header">
+          <span>🏁</span>
+          <span>ĐUA TOP (Còn 4 bot)</span>
+        </div>
+        <div className="floating-ranking-list">
+          {mockRanking.map((item, idx) => (
+            <div
+              key={idx}
+              className={`floating-ranking-item ${item.isPlayer ? 'is-player' : ''}`}
+            >
+              <span className="ranking-name">
+                #{item.rank} {item.name}
+              </span>
+              <span className="ranking-score">{item.height}m</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
 // 1. COMPONENT HUD (Bảng thông số: Độ cao, Cao nhất, Thời gian, Nút điều khiển)
 const PHASE_NAMES = {
   ready: 'Chưa bắt đầu',
