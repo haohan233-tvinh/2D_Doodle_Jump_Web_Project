@@ -1,15 +1,14 @@
 # Doodle Jump USTH
 
-Bộ khung **V0.0** cho nhóm bắt đầu làm game web bằng **ReactJS + Canvas + Python Flask**.
+Game đua cao Doodle Jump chạy bằng **ReactJS + Canvas + Python Flask**.
 
 Repo chung: [2D_Doodle_Jump_Web_Project](https://github.com/haohan233-tvinh/2D_Doodle_Jump_Web_Project).
 
 ## Bắt đầu ở đâu?
 
 1. Đọc [Hướng dẫn bắt đầu](docs/START_HERE.md).
-2. Chạy dự án và thấy nhân vật màu vàng đứng trên bệ.
-3. Mở [Việc đầu tiên của từng người](docs/FIRST_TASKS.md), tìm tên mình.
-4. Chỉ làm nhiệm vụ đầu tiên, chưa làm hết tính năng trong kế hoạch.
+2. Chọn nickname và một trong bốn skin, rồi bắt đầu đua với bốn bot.
+3. Dùng phím mũi tên hoặc A/D để điều khiển; trên màn hình cảm ứng dùng hai nút ở cạnh dưới.
 
 ## Chạy trên Windows
 
@@ -26,19 +25,17 @@ Mở **http://localhost:5173**. Giữ terminal đang chạy. Nhấn **Ctrl+C** �
 Lần sau chỉ cần `npm.cmd run dev`. Sau khi đồng đội đổi thư viện, chạy lại setup.
 Frontend tự cập nhật khi lưu file; sau khi sửa Python, dừng dev rồi chạy lại.
 
-## Bộ khung có gì?
+## Tính năng hiện có
 
-| Đã chạy được | Nhóm sẽ triển khai |
+| Phần | Trạng thái |
 |---|---|
-| Một màn hình game React + Canvas | Di chuyển, nhảy, va chạm, camera |
-| Flask `/api/health` và `/api/config` | Mô phỏng 4 ghost bot và xếp hạng |
-| Proxy Vite nối frontend với backend | Form nickname/skin và vòng đời lượt |
-| Schema SQLite, init không xóa dữ liệu | Lưu kết quả, lịch sử, bảng xếp hạng |
-| Test khung và hướng dẫn từng người | Bộ test gameplay và nghiệp vụ |
+| Di chuyển, tự nhảy, va chạm bệ và camera cuộn | Hoạt động |
+| Bốn bot dùng ảnh nhân vật và bảng xếp hạng trực tiếp | Hoạt động |
+| Chọn nickname, skin, tạm dừng và chơi lại | Hoạt động |
+| Lưu kết quả, lịch sử cá nhân và bảng xếp hạng SQLite | Hoạt động |
+| API cấu hình luật, skin và bot | Hoạt động |
 
-Canvas hiện là **hình tĩnh**, chưa phải game chơi được. API kết quả trả **501 chưa triển khai**, không giả báo đã lưu.
-
-Bản thử của trưởng nhóm đã có vòng lặp vẽ lại, nhân vật giữ nguyên vị trí. Mở `http://localhost:5173/?demo=loop` để xem bộ đếm; giải thích và kết quả kiểm tra ở [LEAD_01_DEMO.md](docs/LEAD_01_DEMO.md).
+Luật, skin và bot lấy từ `GET /api/config`. Sau mỗi lượt, frontend gửi kết quả tới `POST /api/runs`; menu có thể mở lịch sử cá nhân và bảng xếp hạng.
 
 ## Các thư mục
 

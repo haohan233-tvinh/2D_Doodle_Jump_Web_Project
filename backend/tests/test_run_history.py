@@ -100,8 +100,45 @@ def test_get_runs_limits_to_20(tmp_path):
     assert items[-1]["run_id"] == "run-05"
 
 
-def test_post_runs_still_501(tmp_path):
+def test_post_run_and_read_detail(tmp_path):
     client, _ = make_test_client(tmp_path)
-    res = client.post("/api/runs", json={"height": 100})
-    assert res.status_code == 501
-    assert res.json["error"]["code"] == "not_implemented"
+    run_id = str(uuid.uuid4())
+    player_id = str(uuid.uuid4())
+    payload = {
+        "run_id": run_id,
+        "player_id": player_id,
+        "nickname": " Tester ",
+        "skin_id": "nam",
+        "rules_version": "v1",
+        "height": 100,
+        "elapsed_ms": 2500,
+        "outcome": "dnf",
+        "placement": 3,
+    }
+    saved = client.post("/api/runs", json=payload)
+    assert saved.status_code == 201
+    assert saved.json["nickname"] == "Tester"
+    assert client.post("/api/runs", json=payload).status_code == 200
+    assert client.get(f"/api/runs/{run_id}").json["height"] == 100
+    assert len(client.get(f"/api/runs?player_id={player_id}").json["items"]) == 1
+
+
+def test_leaderboard_orders_finished_then_highest_dnf(tmp_path):
+    client, _ = make_test_client(tmp_path)
+    player_id = str(uuid.uuid4())
+    base = {
+        "player_id": player_id,
+        "skin_id": "nam",
+        "rules_version": "v1",
+        "placement": 1,
+    }
+    runs = [
+        {**base, "run_id": str(uuid.uuid4()), "nickname": "DNF", "height": 2500,
+         "elapsed_ms": 2000, "outcome": "dnf"},
+        {**base, "run_id": str(uuid.uuid4()), "nickname": "Winner", "height": 3000,
+         "elapsed_ms": 50000, "outcome": "finished"},
+    ]
+    for run in runs:
+        assert client.post("/api/runs", json=run).status_code == 201
+    items = client.get("/api/leaderboard?rules_version=v1").json["items"]
+    assert [item["nickname"] for item in items] == ["Winner", "DNF"]

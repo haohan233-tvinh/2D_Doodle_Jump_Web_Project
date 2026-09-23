@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getJson } from '../services/api.js';
-import { createGame } from '../game/engine.js';
 
 // 0. COMPONENT TOP BAR (Thanh điều hướng tối trên cùng: Logo, Timer, Hint, Nút Chơi lại)
 export function TopBar({ elapsedMs = 0, phase = 'ready', onTogglePause, onRestart }) {
@@ -51,16 +50,12 @@ export function TopBar({ elapsedMs = 0, phase = 'ready', onTogglePause, onRestar
 }
 
 // 0.1 COMPONENT FLOATING HUD (Thẻ nổi Kỷ lục & Đua top lơ lửng trên Canvas)
-export function FloatingHUD({ currentHeight = 0, maxHeight = 0, nickname = 'Bạn' }) {
+export function FloatingHUD({ currentHeight = 0, maxHeight = 0, nickname = 'Bạn', ranking = [] }) {
   const displayCurrent = Math.max(0, Math.round(currentHeight));
   const displayMax = Math.max(displayCurrent, Math.round(maxHeight));
 
-  const mockRanking = [
-    { rank: 1, name: 'Thầy Sơn', height: Math.max(displayCurrent, 177) },
-    { rank: 2, name: 'Thầy Nam', height: Math.max(displayCurrent, 177) },
-    { rank: 3, name: nickname || 'Bạn', height: displayCurrent, isPlayer: true },
-    { rank: 4, name: 'Thầy Hiệp', height: Math.min(displayCurrent, 177) },
-    { rank: 5, name: 'Thầy Việt', height: Math.min(displayCurrent, 177) },
+  const racers = ranking.length ? ranking : [
+    { id: 'player', name: nickname || 'Bạn', progress: displayCurrent },
   ];
 
   return (
@@ -81,18 +76,18 @@ export function FloatingHUD({ currentHeight = 0, maxHeight = 0, nickname = 'Bạ
       <div className="floating-hud-ranking" aria-label="Bảng đua top">
         <div className="floating-ranking-header">
           <span>🏁</span>
-          <span>ĐUA TOP (Còn 4 bot)</span>
+          <span>ĐUA TOP (Còn {racers.filter((item) => item.id !== 'player' && !item.isDead).length} bot)</span>
         </div>
         <div className="floating-ranking-list">
-          {mockRanking.map((item, idx) => (
+          {racers.map((item, idx) => (
             <div
-              key={idx}
-              className={`floating-ranking-item ${item.isPlayer ? 'is-player' : ''}`}
+              key={item.id}
+              className={`floating-ranking-item ${item.id === 'player' ? 'is-player' : ''}`}
             >
               <span className="ranking-name">
-                #{item.rank} {item.name}
+                #{idx + 1} {item.id === 'player' ? (nickname || 'Bạn') : item.name}
               </span>
-              <span className="ranking-score">{item.height}m</span>
+              <span className="ranking-score">{item.finished ? 'Đích' : item.isDead ? 'Rơi vực' : `${item.progress}m`}</span>
             </div>
           ))}
         </div>
@@ -198,6 +193,7 @@ export function StartMenu({
   config,
   onStartGame,
   onOpenLeaderboard,
+  onOpenHistory,
   initialNickname = '',
   initialSkin = 'doodle',
 }) {
@@ -263,18 +259,14 @@ export function StartMenu({
             <label htmlFor="player-skin" className="form-label">
               Trang phục (Skin)
             </label>
-            <select
-              id="player-skin"
-              className="form-select"
-              value={skinId}
-              onChange={(e) => setSkinId(e.target.value)}
-            >
-              {skins.map((skin) => (
-                <option key={skin.id} value={skin.id}>
-                  {skin.name}
-                </option>
-              ))}
-            </select>
+            <div id="player-skin" className="skin-choice-grid" role="radiogroup" aria-label="Trang phục">
+              {skins.map((skin) => <button key={skin.id} type="button"
+                className={skinId === skin.id ? 'skin-choice selected' : 'skin-choice'}
+                role="radio" aria-checked={skinId === skin.id} onClick={() => setSkinId(skin.id)}>
+                <img src={skin.sprite || `/images/sprites/${skin.id}.png`} alt="" />
+                <span>{skin.name}</span>
+              </button>)}
+            </div>
           </div>
 
           {/* Hướng dẫn phím */}
@@ -297,70 +289,12 @@ export function StartMenu({
             >
               🏆 Bảng xếp hạng
             </button>
+            <button type="button" className="btn-outline" onClick={onOpenHistory}>
+              📖 Lịch sử của tôi
+            </button>
           </div>
         </form>
       </div>
-    </div>
-  );
-}
-
-// 3. COMPONENT GAME CANVAS (Khung màn hình Canvas 2D vẽ đồ họa game)
-export function GameCanvas({
-  config,
-  showLoopDemo = false,
-  restartKey = 0,
-  isPaused = false,
-  onUpdateStats,
-  onGameOver,
-}) {
-  const canvasRef = useRef(null);
-  const isPausedRef = useRef(isPaused);
-  isPausedRef.current = isPaused;
-  const [frameCount, setFrameCount] = useState(0);
-
-  useEffect(() => {
-    setFrameCount(0);
-    const game = createGame(canvasRef.current, config, {
-      isPaused: () => isPausedRef.current,
-      onFrame: showLoopDemo
-        ? ({ frameCount }) => {
-            if (frameCount === 1 || frameCount % 10 === 0) {
-              setFrameCount(frameCount);
-            }
-          }
-        : undefined,
-      onStats: ({ currentHeight, maxHeight }) => {
-        if (onUpdateStats) {
-          onUpdateStats({ currentHeight, maxHeight });
-        }
-      },
-      onGameOver: ({ finalHeight, finalMaxHeight }) => {
-        if (onGameOver) {
-          onGameOver({ finalHeight, finalMaxHeight });
-        }
-      },
-    });
-
-    return () => game.destroy();
-  }, [config, showLoopDemo, restartKey]);
-
-  return (
-    <div className="game-stage">
-      <canvas
-        ref={canvasRef}
-        width="960"
-        height="540"
-        aria-label="Khung game ngang 16:9, dùng A/D hoặc phím trái/phải để di chuyển"
-      >
-        Trình duyệt cần hỗ trợ Canvas 2D.
-      </canvas>
-
-      {showLoopDemo && (
-        <p className="caption">
-          Đã vẽ lại: <output aria-label="Số khung đã vẽ" aria-live="off">{frameCount}</output> lần.
-          <br />Số tăng = vòng lặp đang chạy. Dùng A/D hoặc ←/→ để thử di chuyển.
-        </p>
-      )}
     </div>
   );
 }
@@ -372,6 +306,7 @@ export function GameOverModal({
   elapsedMs = 0,
   placement = 1,
   nickname = '',
+  save = { status: '', message: '' },
   onResume,
   onRestart,
   onExitToMenu,
@@ -411,6 +346,7 @@ export function GameOverModal({
               </div>
             </div>
             <div className="modal-actions-column">
+              {save.message && <p role="status" className={save.status === 'error' ? 'modal-alert' : 'modal-status'}>{save.message}</p>}
               <button type="button" className="btn-primary" onClick={onRestart}>🔄 Chơi lại</button>
               <button type="button" className="btn-secondary" onClick={onExitToMenu}>🏠 Về Menu</button>
             </div>
@@ -422,25 +358,33 @@ export function GameOverModal({
 }
 
 // 5. COMPONENT LEADERBOARD MODAL (Popup Bảng Xếp Hạng Top 10)
-export function LeaderboardModal({ onClose, rulesVersion = 'v1' }) {
+export function LeaderboardModal({ onClose, rulesVersion = 'v1', mode = 'leaderboard', playerId = '' }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    getJson(`/api/leaderboard?rules_version=${encodeURIComponent(rulesVersion)}`)
+    const path = mode === 'history'
+      ? `/api/runs?player_id=${encodeURIComponent(playerId)}`
+      : `/api/leaderboard?rules_version=${encodeURIComponent(rulesVersion)}`;
+    getJson(path)
       .then((data) => {
         setItems(data.items || []);
         setLoading(false);
+        setError('');
       })
-      .catch(() => setLoading(false));
-  }, [rulesVersion]);
+      .catch((requestError) => { setLoading(false); setError(requestError.message); });
+  }, [rulesVersion, mode, playerId, attempt]);
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true">
       <div className="modal-card">
-        <h2 className="modal-title">🏆 Bảng Xếp Hạng Top 10</h2>
+        <h2 className="modal-title">{mode === 'history' ? '📖 Lịch sử của tôi' : '🏆 Bảng Xếp Hạng Top 10'}</h2>
         {loading ? (
           <p className="modal-status">Đang tải...</p>
+        ) : error ? (
+          <div className="modal-alert" role="alert"><p>{error}</p><button type="button" onClick={() => setAttempt(value => value + 1)}>Thử lại</button></div>
         ) : items.length === 0 ? (
           <p className="modal-empty">Chưa có lượt chơi nào.</p>
         ) : (

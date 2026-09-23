@@ -2,17 +2,13 @@
 
 Frontend gọi đường dẫn tương đối `/api/...`; Vite chuyển tới Flask :3000 khi phát triển.
 
-## Đang hoạt động ở V0.0
+## Route đang hoạt động
 
 - `GET /api/health` → 200, `{status, service, version}`.
 - `GET /api/config` → 200, `{rules_version, finish_height, max_duration_ms, skins, bots}`.
 - `flask --app backend.app init-db` tạo bảng còn thiếu, không xóa bản ghi cũ.
 
-## Đã đặt route nhưng chưa có nghiệp vụ
-
-Các route sau **đang trả 501**. Bảng này là mục tiêu để thành viên triển khai, không phải mô tả tính năng đã hoàn thành.
-
-| Route | Kết quả mục tiêu |
+| Route | Kết quả |
 |---|---|
 | POST /api/runs | 201 khi tạo; 200 khi cùng ID/cùng nội dung; 409 nếu ID cũ nhưng dữ liệu khác |
 | GET /api/runs?player_id=UUID | 200 `{items: [...]}`, 20 lượt mới nhất của khách; tham số thiếu/sai trả 422 |

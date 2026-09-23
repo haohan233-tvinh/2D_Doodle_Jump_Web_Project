@@ -187,11 +187,7 @@ main {
   max-width: calc((100dvh - 66px) * 16 / 9);
   max-height: calc((100vw - 16px) * 9 / 16);
   aspect-ratio: 16 / 9;
-  background: #f4f8f3;
-  background-image: 
-    linear-gradient(to right, rgba(0, 70, 30, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 70, 30, 0.05) 1px, transparent 1px);
-  background-size: 28px 28px;
+  background: #f4f8f3 url('/images/game-background.png') center / cover no-repeat;
   border: 1px solid #1a382b;
   border-radius: 12px;
   overflow: hidden;
@@ -406,6 +402,45 @@ canvas {
 .form-input:focus, .form-select:focus {
   outline: none;
   border-color: var(--primary);
+}
+
+.skin-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.skin-choice {
+  min-width: 0;
+  padding: 4px;
+  border: 2px solid #ded5c7;
+  background: #fff;
+  color: var(--text-main);
+  border-radius: 8px;
+}
+
+.skin-choice img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  border-radius: 5px;
+  background: #f5f1e8;
+}
+
+.skin-choice span {
+  display: block;
+  padding: 3px 1px 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+.skin-choice.selected {
+  border-color: var(--primary);
+  background: #e9f4ed;
+  box-shadow: 0 0 0 2px rgb(67 118 92 / 15%);
 }
 
 .input-error {
@@ -652,6 +687,38 @@ button:focus-visible {
   border-radius: 6px;
   margin: 12px 0;
   font-size: 12px;
+}
+
+.modal-alert p { margin: 0 0 8px; }
+
+.touch-controls {
+  position: absolute;
+  z-index: 12;
+  left: 50%;
+  bottom: 16px;
+  display: none;
+  transform: translateX(-50%);
+  gap: 18px;
+}
+
+.touch-controls button {
+  width: 64px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 70%);
+  border-radius: 14px;
+  background: rgb(13 32 25 / 78%);
+  color: #fff;
+  font-size: 26px;
+  touch-action: none;
+  user-select: none;
+}
+
+@media (pointer: coarse), (max-width: 720px) {
+  .touch-controls { display: flex; }
+  .floating-hud-ranking { width: 168px; }
+  .skin-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .menu-card { max-height: 94dvh; overflow-y: auto; }
 }
 
 @keyframes fadeIn {
