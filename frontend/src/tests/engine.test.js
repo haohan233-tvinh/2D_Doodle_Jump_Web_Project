@@ -152,10 +152,15 @@ it('trượt camera liên tục rồi mới mở menu và tự xuất phát sau 
   const phases = [];
   const game = createGame(canvas, {}, { enableIntro: true, onPhaseChange: phase => phases.push(phase) });
   tick(0);
+  expect(game.getState().world.platforms).toHaveLength(0);
   game.startFromTitle();
   game.startFromTitle();
+  expect(game.getState().world.platforms.length).toBeGreaterThan(0);
+  expect(game.getState().ui.platformReveal).toBe(0);
   tick(100);
   expect(game.getState().world.cameraY).toBe(-750);
+  tick(500);
+  expect(game.getState().ui.platformReveal).toBe(1);
   tick(1000);
   expect(game.getState().world.cameraY).toBeCloseTo(-375, 0);
   tick(1900);
@@ -169,6 +174,23 @@ it('trượt camera liên tục rồi mới mở menu và tự xuất phát sau 
   tick(2800);
   expect(game.getPhase()).toBe('running');
   expect(phases.filter(phase => phase === 'intro_sliding')).toHaveLength(1);
+  game.destroy();
+});
+
+it('về màn tiêu đề sẽ dọn hết bệ và lần trượt tiếp theo mới sinh lại', () => {
+  const game = createGame(canvas, {}, { enableIntro: true });
+  tick(0);
+  game.startFromTitle();
+  tick(100);
+  tick(1900);
+  tick(2110);
+  game.returnToTitleMenu();
+  tick(2200);
+  tick(3300);
+  expect(game.getPhase()).toBe('intro_title');
+  expect(game.getState().world.platforms).toHaveLength(0);
+  game.startFromTitle();
+  expect(game.getState().world.platforms.length).toBeGreaterThan(0);
   game.destroy();
 });
 

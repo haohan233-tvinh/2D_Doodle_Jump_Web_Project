@@ -41,8 +41,12 @@ export function render(ctx, state) {
     }
   }
 
-  // 2. Các bậc thềm (Platforms) - Flat rectangles chuẩn dev
-  for (const platform of world.platforms) {
+  // Keep the title empty; platforms fade in as the camera starts moving.
+  const platformReveal = phase === 'intro_title' ? 0
+    : phase === 'intro_sliding' ? Math.max(0, Math.min(1, ui.platformReveal ?? 0)) : 1;
+  ctx.save();
+  ctx.globalAlpha = (ctx.globalAlpha ?? 1) * platformReveal;
+  for (const platform of platformReveal > 0 ? world.platforms : []) {
     if (platform.broken) continue;
     const py = platform.y - cameraY;
     if (py < -40 || py > height + 40) continue;
@@ -62,6 +66,7 @@ export function render(ctx, state) {
       ctx.fillRect(platform.x + platform.width / 2 - 6, py + 2, 12, 4);
     }
   }
+  ctx.restore();
 
   // 3. Vẽ các Bot đối thủ theo đúng phong cách chữ nhật nguyên bản dev
   if (!isMock) {

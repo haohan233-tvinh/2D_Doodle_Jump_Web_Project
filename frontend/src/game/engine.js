@@ -47,11 +47,12 @@ export function createGame(canvas, config, {
   let phase = initialPhase ?? (enableIntro ? 'intro_title' : 'running');
 
   // World initialization
-  const world = createWorld({ forIntro: enableIntro });
-  if (enableIntro) {
-    spawnIntroPlatforms(world, -1400);
-    world.cameraY = (phase === 'intro_title' || phase === 'intro_sliding') ? Y_INTRO : 0;
-  }
+  // The title is an empty stretch of paper. Build the platforms only when the
+  // camera begins descending, so they enter the scene with the movement.
+  const world = enableIntro && phase === 'intro_title'
+    ? { platforms: [], cameraY: Y_INTRO }
+    : createWorld({ forIntro: enableIntro });
+  if (enableIntro && phase === 'intro_sliding') world.cameraY = Y_INTRO;
 
   const player = createPlayer();
   const bots = createStartingBots(388);
@@ -66,6 +67,7 @@ export function createGame(canvas, config, {
     ui: {
       isStartButtonHovered: false,
       wipeProgress: 0,
+      platformReveal: 0,
     }
   };
 
@@ -118,6 +120,9 @@ export function createGame(canvas, config, {
 
   function startSlideDown() {
     if (phase !== 'intro_title') return;
+    state.world = createWorld({ forIntro: true });
+    state.world.cameraY = Y_INTRO;
+    state.ui.platformReveal = 0;
     setPhase('intro_sliding');
     slideStartTime = null;
     sound.playWhoosh(reduceMotion ? 0.1 : 1.8);
@@ -268,6 +273,7 @@ export function createGame(canvas, config, {
       const ease = easeInOutCubic(progress);
 
       state.world.cameraY = Y_INTRO + (0 - Y_INTRO) * ease;
+      state.ui.platformReveal = Math.min(1, progress / 0.18);
       updatePlatforms(state.world, dt, { cullOffscreen: false });
 
       // Player and bots do gentle idle bounce as camera descends
@@ -305,6 +311,8 @@ export function createGame(canvas, config, {
       updatePlatforms(state.world, dt, { cullOffscreen: false });
       if (progress >= 1) {
         state.world.cameraY = Y_INTRO;
+        state.world.platforms = [];
+        state.ui.platformReveal = 0;
         state.player.x = 300;
         state.player.y = 388;
         state.player.vx = 0;
