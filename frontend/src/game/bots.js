@@ -14,6 +14,13 @@ import { JUMP_VELOCITY } from './physics.js';
 
 export { BOT_PROFILES };
 
+const PROFILE_MAP = {
+  son: 'NOVICE',
+  viet: 'STANDARD',
+  quang: 'SPEEDRUNNER',
+  nam: 'PERFECT',
+};
+
 /**
  * BOT-01: Tạo danh sách bot từ cấu hình profiles nhận vào.
  * Sao chép từng phần tử, thêm progress: 0. Không mutate dữ liệu truyền vào.
@@ -23,6 +30,37 @@ export function createBots(profiles = []) {
     ...profile,
     progress: 0,
   }));
+}
+
+export function createRaceBots(profiles = []) {
+  return profiles.map((profile, index) => {
+    const laneX = 96 + index * 230;
+    const spriteId = profile.sprite_id || profile.id || 'nam';
+    const profileKey = PROFILE_MAP[spriteId] || (profile.type || '').toUpperCase();
+    const bot = createBot(profileKey, laneX, 388, {
+      id: profile.id || `bot-${index}`,
+      name: profile.name || `Bot ${index + 1}`,
+      sprite_id: spriteId,
+      base_speed: profile.base_speed || 44,
+      lane: laneX,
+      finishedAt: null,
+      isDead: false,
+      progress: profile.progress || 0,
+    });
+    return bot;
+  });
+}
+
+export function updateRaceBots(bots, elapsedMs, finishHeight) {
+  const seconds = elapsedMs / 1000;
+  for (const [index, bot] of bots.entries()) {
+    const speed = bot.base_speed || 44;
+    const variation = 4 * (Math.sin(seconds * 0.7 + index) - Math.sin(index));
+    bot.progress = Math.min(finishHeight, Math.max(bot.progress || 0, speed * seconds + variation));
+    if (bot.progress >= finishHeight && bot.finishedAt === null) {
+      bot.finishedAt = elapsedMs;
+    }
+  }
 }
 
 /**
@@ -53,6 +91,7 @@ export function createBot(typeKey, startX, startY = 388, overrides = {}) {
     targetPlatform: null,
     targetOffsetX: currentAimOffset,
     lastPlatformY: startY,
+    lastPlatformType: 'standard',
     reactionTimer: profile.reactionDelay || 0,
     ...overrides,
   };
@@ -66,20 +105,21 @@ export function findTargetPlatform(bot, platforms = [], allBots = []) {
 
   const botCenterX = bot.x + bot.width / 2;
   const currentY = bot.lastPlatformY !== undefined ? bot.lastPlatformY : bot.y;
-  const maxReach = bot.profile?.maxJumpReach || 175;
+  const isBouncy = bot.lastPlatformType === 'bouncy';
+  const effectiveMaxReach = isBouncy ? (bot.profile?.maxJumpReach || 175) : Math.min(108, bot.profile?.maxJumpReach || 108);
 
   // 1. Trường hợp cấp cứu: Bot đang rơi xuống (vy > 0 trong Canvas), tìm bệ ngay dưới chân
   if (bot.vy > 0) {
     const landingTargets = platforms.filter((p) => {
       if (p.broken) return false;
       const dropDy = p.y - (bot.y + bot.height);
-      return dropDy >= -10 && dropDy <= 120;
+      return dropDy >= -10 && dropDy <= 140;
     });
 
     if (landingTargets.length > 0) {
       landingTargets.sort((a, b) => {
-        const aDx = Math.abs(a.x + a.width / 2 - botCenterX);
-        const bDx = Math.abs(b.x + b.width / 2 - botCenterX);
+        const aDx = Math.min(Math.abs(a.x + a.width / 2 - botCenterX), SCREEN_WIDTH - Math.abs(a.x + a.width / 2 - botCenterX));
+        const bDx = Math.min(Math.abs(b.x + b.width / 2 - botCenterX), SCREEN_WIDTH - Math.abs(b.x + b.width / 2 - botCenterX));
         return aDx - bDx;
       });
       return landingTargets[0];
@@ -91,10 +131,10 @@ export function findTargetPlatform(bot, platforms = [], allBots = []) {
   const reachableAbove = platforms.filter((p) => {
     if (p.broken) return false;
     const dy = currentY - p.y;
-    return dy >= 25 && dy <= maxReach;
+    return dy >= 20 && dy <= effectiveMaxReach;
   });
 
-  const safePlatforms = reachableAbove.filter((p) => p.type === 'normal' || p.type === 'moving' || p.type === 'bouncy');
+  const safePlatforms = reachableAbove.filter((p) => p.type === 'normal' || p.type === 'standard' || p.type === 'moving' || p.type === 'bouncy');
   const breakablePlatforms = reachableAbove.filter((p) => p.type === 'fragile' || p.type === 'breakable');
 
   const mistakeChance = bot.profile?.breakableMistakeChance ?? 0.008;
@@ -111,7 +151,7 @@ export function findTargetPlatform(bot, platforms = [], allBots = []) {
 
   if (targetPool.length > 0) {
     // Tách bệ nhảy vượt tầng
-    const tier2Platforms = targetPool.filter((p) => {
+    const tier2Platforms = isBouncy ? targetPool.filter((p) => {
       const dy = currentY - p.y;
       if (dy < 110) return false;
       const targetCenterX = p.x + p.width / 2;
@@ -119,7 +159,7 @@ export function findTargetPlatform(bot, platforms = [], allBots = []) {
       const wrapDx = directDx > 0 ? directDx - SCREEN_WIDTH : directDx + SCREEN_WIDTH;
       const chosenDx = Math.min(Math.abs(directDx), Math.abs(wrapDx));
       return chosenDx <= SCREEN_WIDTH * 0.32;
-    });
+    }) : [];
 
     const shouldAttemptSkipJump = tier2Platforms.length > 0 && Math.random() < (bot.profile?.skipJumpChance || 0);
 
@@ -171,8 +211,8 @@ export function findTargetPlatform(bot, platforms = [], allBots = []) {
 
     if (bot.profile?.strategy === 'nearest_wide') {
       targetPool.sort((a, b) => {
-        const aDx = Math.abs(a.x + a.width / 2 - botCenterX);
-        const bDx = Math.abs(b.x + b.width / 2 - botCenterX);
+        const aDx = Math.min(Math.abs(a.x + a.width / 2 - botCenterX), SCREEN_WIDTH - Math.abs(a.x + a.width / 2 - botCenterX));
+        const bDx = Math.min(Math.abs(b.x + b.width / 2 - botCenterX), SCREEN_WIDTH - Math.abs(b.x + b.width / 2 - botCenterX));
         return (aDx - a.width * 0.4) - (bDx - b.width * 0.4);
       });
       return targetPool[0];
@@ -188,7 +228,7 @@ export function findTargetPlatform(bot, platforms = [], allBots = []) {
   // Dự phòng: Lấy bệ phía trên gần nhất nếu có (p.y < currentY)
   const allAbove = platforms.filter((p) => !p.broken && p.y < currentY - 20);
   if (allAbove.length > 0) {
-    allAbove.sort((a, b) => b.y - a.y); // Bệ thấp nhất trong các bệ phía trên
+    allAbove.sort((a, b) => b.y - a.y);
     return allAbove[0];
   }
 
@@ -217,12 +257,17 @@ export function updateBotAI(bot, platforms, dt, allBots = [], cameraY = 0) {
     if (bot.reactionTimer > 0) return;
   }
 
-  // Làm mới mục tiêu nếu cần
+  // Làm mới mục tiêu nếu cần:
+  // - Chưa có mục tiêu
+  // - Mục tiêu đã bị vỡ
+  // - Mục tiêu đã trôi khỏi màn hình
+  // - Hoặc bot đã rơi vượt quá mục tiêu mà chưa nảy
   const hasNoTarget = !bot.targetPlatform;
   const isTargetBroken = bot.targetPlatform?.broken;
   const isTargetOffscreen = bot.targetPlatform && (bot.targetPlatform.y - cameraY > 540 + 100);
+  const isMissed = bot.targetPlatform && bot.vy > 0 && (bot.y + bot.height > bot.targetPlatform.y + 16);
 
-  if (hasNoTarget || isTargetBroken || isTargetOffscreen) {
+  if (hasNoTarget || isTargetBroken || isTargetOffscreen || isMissed) {
     bot.targetPlatform = findTargetPlatform(bot, platforms, allBots);
   }
 
@@ -273,8 +318,10 @@ export function updateBotAI(bot, platforms, dt, allBots = [], cameraY = 0) {
 export function onBotBounce(bot, platform = null) {
   if (platform) {
     bot.lastPlatformY = platform.y;
+    bot.lastPlatformType = platform.type;
   } else {
     bot.lastPlatformY = bot.y;
+    bot.lastPlatformType = 'standard';
   }
 
   bot.targetPlatform = null;

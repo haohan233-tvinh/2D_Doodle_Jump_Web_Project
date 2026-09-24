@@ -108,19 +108,38 @@ export function createPlatformTier(tierY, screenWidth = SCREEN_WIDTH) {
   return platforms;
 }
 
-// Khởi tạo thế giới: 1 bệ chuẩn dưới chân nhân vật + sinh tầng bệ lên trên lấp đầy màn hình
+// Khởi tạo thế giới: 1 bệ chuẩn dưới chân nhân vật + bệ xuất phát cho các làn bot + sinh tầng bệ lên trên
 export function createWorld() {
-  // Bệ đầu tiên gần đáy màn hình, căn giữa dưới chân nhân vật
-  // Nhân vật: x=300, width=34 → tâm = 317
   const startY = SCREEN_HEIGHT - 110;
   const playerCenterX = 300 + 17; // tâm nhân vật (x + width/2)
   const startPlatform = {
-    x: Math.round(playerCenterX - PLATFORM_WIDTH / 2), y: startY,
-    width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT,
+    x: Math.round(playerCenterX - PLATFORM_WIDTH / 2),
+    y: startY,
+    width: PLATFORM_WIDTH,
+    height: PLATFORM_HEIGHT,
     type: PLATFORM_TYPES.STANDARD,
+    safe: true,
   };
 
   const platforms = [startPlatform];
+
+  // Bổ sung bệ xuất phát tại vạch xuất phát cho các làn bot (đảm bảo bot nảy ngay khi bắt đầu)
+  const botLanes = [96, 326, 556, 786];
+  for (const lane of botLanes) {
+    const platX = Math.max(10, Math.min(SCREEN_WIDTH - PLATFORM_WIDTH - 10, Math.round(lane - PLATFORM_WIDTH / 2 + 22)));
+    if (!platforms.some(p => Math.abs(p.x - platX) < 70)) {
+      platforms.push({
+        x: platX,
+        y: startY,
+        width: PLATFORM_WIDTH,
+        height: PLATFORM_HEIGHT,
+        type: PLATFORM_TYPES.STANDARD,
+        safe: true,
+      });
+    }
+  }
+
+  let routeX = startPlatform.x;
 
   // Sinh tầng bệ lên trên cho đến khi phủ hết màn hình (y ≈ 0 hoặc thấp hơn)
   let highestY = startPlatform.y;
@@ -128,17 +147,18 @@ export function createWorld() {
     const deltaY = MIN_GAP_Y + Math.random() * (MAX_GAP_Y - MIN_GAP_Y);
     const tierY = highestY - deltaY;
     const tierPlatforms = createPlatformTier(tierY);
+    routeX = ensureRoute(tierPlatforms, routeX, tierY);
     for (const p of tierPlatforms) {
       platforms.push(p);
     }
     highestY = Math.min(...tierPlatforms.map(p => p.y));
   }
 
-  return { platforms, cameraY: 0 };
+  return { platforms, cameraY: 0, routeX };
 }
 
 // Cập nhật bệ theo cameraY và thời gian dt
-export function updatePlatforms(world, dt = 1 / 60) {
+export function updatePlatforms(world, dt = 1 / 60, highestEntityY = null) {
   if (!world.platforms || world.platforms.length === 0) return;
 
   // 1. Cập nhật vị trí các bệ di động (moving)
@@ -162,12 +182,16 @@ export function updatePlatforms(world, dt = 1 / 60) {
   // 2. Tìm bệ cao nhất hiện tại (y nhỏ nhất)
   let highestY = Math.min(...world.platforms.map(p => p.y));
 
-  // 3. Nếu bệ cao nhất chưa che phủ đủ chiều cao phía trên camera, sinh thêm tầng bệ
-  const spawnCeiling = world.cameraY - 200; // Đón đầu 200px phía trên khung nhìn
+  // 3. Nếu bệ cao nhất chưa che phủ đủ chiều cao phía trên camera hoặc đối tượng leo cao nhất, sinh thêm tầng bệ
+  const targetCeiling = highestEntityY !== null && Number.isFinite(highestEntityY)
+    ? Math.min(world.cameraY, highestEntityY)
+    : world.cameraY;
+  const spawnCeiling = targetCeiling - 250; // Đón đầu 250px phía trên
   while (highestY > spawnCeiling) {
     const deltaY = MIN_GAP_Y + Math.random() * (MAX_GAP_Y - MIN_GAP_Y);
     const tierY = highestY - deltaY;
     const tierPlatforms = createPlatformTier(tierY);
+    world.routeX = ensureRoute(tierPlatforms, world.routeX ?? 300, tierY);
     for (const p of tierPlatforms) {
       world.platforms.push(p);
     }
@@ -176,4 +200,27 @@ export function updatePlatforms(world, dt = 1 / 60) {
 
   // 4. Dọn rác: Bỏ các bệ đã trôi khỏi mép dưới màn hình (> 550px so với camera)
   world.platforms = world.platforms.filter(p => p.y - world.cameraY < 550);
+}
+
+function ensureRoute(tier, previousX, y) {
+  let route = tier.reduce((best, platform) => (
+    Math.abs(platform.x - previousX) < Math.abs(best.x - previousX) ? platform : best
+  ));
+  if (Math.abs(route.x - previousX) > 100) {
+    route = {
+      x: Math.max(10, Math.min(
+        SCREEN_WIDTH - PLATFORM_WIDTH - 10,
+        previousX + Math.sign(route.x - previousX) * 80,
+      )),
+      y,
+      width: PLATFORM_WIDTH,
+      height: PLATFORM_HEIGHT,
+    };
+    tier.push(route);
+  }
+  route.type = PLATFORM_TYPES.STANDARD;
+  route.safe = true;
+  delete route.vx;
+  delete route.bounceMultiplier;
+  return route.x;
 }

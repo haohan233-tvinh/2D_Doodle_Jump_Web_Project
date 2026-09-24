@@ -1,5 +1,7 @@
 from flask import Blueprint, jsonify
 
+from ..rules import RULES
+
 config_api = Blueprint("config", __name__)
 
 
@@ -10,15 +12,4 @@ def health():
 
 @config_api.get("/api/config")
 def config():
-    return jsonify(
-        rules_version="v1",
-        finish_height=3000,
-        max_duration_ms=180000,
-        skins=[{"id": "doodle", "name": "Doodle mặc định"}],
-        bots=[
-            {"id": "teacher-1", "name": "Ghost 1", "base_speed": 44},
-            {"id": "teacher-2", "name": "Ghost 2", "base_speed": 48},
-            {"id": "teacher-3", "name": "Ghost 3", "base_speed": 41},
-            {"id": "teacher-4", "name": "Ghost 4", "base_speed": 46},
-        ],
-    )
+    return jsonify(RULES)

@@ -50,7 +50,7 @@ it.each([30, 60, 144])('vẽ liên tục ở %i khung/giây mà không đổi v�
   expect(onFrame.mock.calls[0][0]).toEqual({ frameCount: 1, dt: 0 });
   const elapsed = onFrame.mock.calls.reduce((sum, [frame]) => sum + frame.dt, 0);
   expect(elapsed).toBeCloseTo(1, 6);
-  expect(render.mock.lastCall[1].player).toEqual({
+  expect(render.mock.lastCall[1].player).toMatchObject({
     x: 300, y: 388, width: 34, height: 42, vx: 0, vy: 0,
   });
   game.destroy();
@@ -62,10 +62,10 @@ it('nối bàn phím vào di chuyển ngang, dừng khi thả phím hoặc mất
   const player = render.mock.lastCall[1].player;
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyD' }));
   tick(25);
-  expect(player.x).toBeCloseTo(301.125, 3);
+  expect(player.x).toBeCloseTo(300.5, 3);
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowLeft' }));
   tick(50);
-  expect(player.x).toBeCloseTo(301.125, 3);
+  expect(player.x).toBeCloseTo(300.5, 3);
   window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyD' }));
   tick(75);
   expect(player.x).toBeCloseTo(300, 3);

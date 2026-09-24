@@ -23,7 +23,7 @@ it('bouncy, fragile, and screen wrap use dev coordinates',()=>{
 });
 it('renderer keeps generated platforms inside the 960px viewport during scrolling',()=>{
  const world=createWorld();world.cameraY=-400;updatePlatforms(world);
- const ctx={canvas:{width:960,height:540},clearRect:vi.fn(),save:vi.fn(),restore:vi.fn(),fillRect:vi.fn(),translate:vi.fn()};
+ const ctx={canvas:{width:960,height:540},clearRect:vi.fn(),save:vi.fn(),restore:vi.fn(),fillRect:vi.fn(),translate:vi.fn(),setLineDash:vi.fn(),beginPath:vi.fn(),moveTo:vi.fn(),lineTo:vi.fn(),stroke:vi.fn(),fillText:vi.fn()};
  render(ctx,{world,player:{x:300,y:0,width:34,height:42}});
  expect(ctx.translate).not.toHaveBeenCalled();
  for(const [x,,width] of ctx.fillRect.mock.calls){expect(x).toBeGreaterThanOrEqual(0);expect(x+width).toBeLessThanOrEqual(960);}
@@ -31,7 +31,7 @@ it('renderer keeps generated platforms inside the 960px viewport during scrollin
 });
 it('real engine bounces, rises and scrolls with physics enabled',()=>{
  let next;vi.stubGlobal('requestAnimationFrame',fn=>{next=fn;return 1});vi.stubGlobal('cancelAnimationFrame',vi.fn());
- const ctx={canvas:{width:960,height:540},clearRect:vi.fn(),save:vi.fn(),restore:vi.fn(),fillRect:vi.fn()};
+ const ctx={canvas:{width:960,height:540},clearRect:vi.fn(),save:vi.fn(),restore:vi.fn(),fillRect:vi.fn(),setLineDash:vi.fn(),beginPath:vi.fn(),moveTo:vi.fn(),lineTo:vi.fn(),stroke:vi.fn(),fillText:vi.fn()};
  const game=createGame({width:960,height:540,getContext:()=>ctx},{});
- try {let minY=388;for(let i=0;i<120;i++){next(i*1000/60);const player=ctx.fillRect.mock.calls.findLast(c=>c[2]===34);minY=Math.min(minY,player[1]);}expect(minY).toBeLessThan(350);expect(ctx.fillRect.mock.calls.every(c=>c.every(Number.isFinite))).toBe(true);}finally{game.destroy();vi.unstubAllGlobals();}
+ try {for(let i=0;i<120;i++) next(i*1000/60);expect(game.getSnapshot().maxHeight).toBeGreaterThan(38);expect(ctx.fillRect.mock.calls.every(c=>c.every(Number.isFinite))).toBe(true);}finally{game.destroy();vi.unstubAllGlobals();}
 });
