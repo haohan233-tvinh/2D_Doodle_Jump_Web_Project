@@ -5,7 +5,7 @@ export const SCREEN_HEIGHT = 540;
 export const PLATFORM_WIDTH = 120;  // Bệ nhỏ gọn hơn, phù hợp màn rộng
 export const PLATFORM_HEIGHT = 14;  // Chiều cao chuẩn đồng nhất cho mọi bệ
 export const MIN_GAP_Y = 55;
-export const MAX_GAP_Y = 85;
+export const MAX_GAP_Y = 78;  // Đảm bảo nhân vật luôn nhảy tới được (từ 85 → 78)
 
 export const PLATFORM_TYPES = {
   STANDARD: 'standard',
@@ -29,21 +29,25 @@ export function createPlatformTier(tierY, screenWidth = SCREEN_WIDTH) {
   const totalPlatformWidth = platformCount * PLATFORM_WIDTH;
   const totalFreeSpace = screenWidth - totalPlatformWidth;
 
-  // Chia khoảng trống thành 5 phần: lề trái, 3 khe giữa, lề phải
+  // Chia khoảng trống thành các phần: lề trái, các khe giữa, lề phải
   const minGap = 30; // Khoảng cách tối thiểu giữa 2 bệ kề nhau
   const minMargin = 10; // Lề tối thiểu trái/phải
-  const numInternalGaps = platformCount - 1; // 3 khe giữa
-  const reservedSpace = minGap * numInternalGaps + minMargin * 2; // 110px
-  const flexibleSpace = Math.max(0, totalFreeSpace - reservedSpace); // 370px linh hoạt
+  const numInternalGaps = platformCount - 1;
+  const reservedSpace = minGap * numInternalGaps + minMargin * 2;
+  const flexibleSpace = Math.max(0, totalFreeSpace - reservedSpace);
 
-  // Phân bổ ngẫu nhiên khoảng trống cho 5 vùng
-  const numSlots = numInternalGaps + 2; // 5 vùng
+  // Phân bổ ngẫu nhiên khoảng trống cho các vùng
+  const numSlots = numInternalGaps + 2;
   const rawWeights = Array.from({ length: numSlots }, () => 0.2 + Math.random());
   const totalWeight = rawWeights.reduce((s, w) => s + w, 0);
   const shares = rawWeights.map(w => w / totalWeight);
 
+  const MAX_JUMPABLE_X_DISTANCE = 200; // px - khoảng cách X tối đa có thể nhảy qua
+  const maxExtraPerSlot = MAX_JUMPABLE_X_DISTANCE - PLATFORM_WIDTH; // 80px extra mỗi slot
+  const cappedFlexible = Math.min(flexibleSpace, maxExtraPerSlot * numSlots);
+
   const spacings = shares.map((s, idx) => {
-    const extra = Math.round(s * flexibleSpace);
+    const extra = Math.round(s * cappedFlexible);
     if (idx === 0 || idx === numSlots - 1) {
       return minMargin + extra; // Lề trái/phải
     }
@@ -207,16 +211,36 @@ function ensureRoute(tier, previousX, y) {
     Math.abs(platform.x - previousX) < Math.abs(best.x - previousX) ? platform : best
   ));
   if (Math.abs(route.x - previousX) > 100) {
-    route = {
-      x: Math.max(10, Math.min(
+    const candidateX = Math.max(10, Math.min(
+      SCREEN_WIDTH - PLATFORM_WIDTH - 10,
+      previousX + Math.sign(route.x - previousX) * 80,
+    ));
+
+    const minSeparation = PLATFORM_WIDTH + 15;
+    const hasOverlap = (xPos) => tier.some(p => Math.abs(p.x - xPos) < minSeparation);
+
+    const offsets = [0, PLATFORM_WIDTH + 20, -(PLATFORM_WIDTH + 20)];
+    let placed = false;
+    for (const offset of offsets) {
+      const testX = Math.max(10, Math.min(
         SCREEN_WIDTH - PLATFORM_WIDTH - 10,
-        previousX + Math.sign(route.x - previousX) * 80,
-      )),
-      y,
-      width: PLATFORM_WIDTH,
-      height: PLATFORM_HEIGHT,
-    };
-    tier.push(route);
+        candidateX + offset,
+      ));
+      if (!hasOverlap(testX)) {
+        const newRoute = {
+          x: testX,
+          y,
+          width: PLATFORM_WIDTH,
+          height: PLATFORM_HEIGHT,
+          type: PLATFORM_TYPES.STANDARD,
+          safe: true,
+        };
+        tier.push(newRoute);
+        route = newRoute;
+        placed = true;
+        break;
+      }
+    }
   }
   route.type = PLATFORM_TYPES.STANDARD;
   route.safe = true;
