@@ -859,3 +859,902 @@ body, main, .game-layout-container, .canvas-wrapper {
     transition-duration: .01ms !important;
   }
 }
+
+/* ==========================================================================
+   RACE V2 HUD (Issue #29 - UI-01: Tiến độ, Thứ hạng, Siêu năng lực, Choáng)
+   ========================================================================== */
+
+.race-hud-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 14px;
+  box-sizing: border-box;
+  user-select: none;
+  font-family: inherit;
+}
+
+/* 1. Nhãn Demo rõ ràng */
+.race-demo-badge {
+  position: absolute;
+  top: 6px;
+  right: 14px;
+  z-index: 25;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(245, 158, 11, 0.92);
+  color: #78350f;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  pointer-events: auto;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.demo-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #b45309;
+  animation: pulse-dot 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+/* 2. Hiệu ứng Viền Choáng (Vignette) không cản tầm nhìn giữa màn hình */
+.race-stun-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: inset 0 0 45px rgba(234, 179, 8, 0.45);
+  animation: vignette-pulse 1.2s infinite ease-in-out;
+}
+
+@keyframes vignette-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.95; }
+}
+
+/* 3. Topbar: Thứ hạng & Tiến độ tới đích */
+.race-hud-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  max-width: 932px;
+  margin: 0 auto;
+  pointer-events: none;
+}
+
+.race-placement-card {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 32, 25, 0.88);
+  backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(67, 118, 92, 0.6);
+  border-radius: 12px;
+  padding: 4px 12px;
+  min-width: 74px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.placement-label {
+  font-size: 9px;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.8px;
+}
+
+.placement-number-group {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.placement-rank {
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  color: #f8fafc;
+}
+
+.placement-rank.rank-1 {
+  color: #fbbf24;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
+}
+
+.placement-rank.rank-2 {
+  color: #e2e8f0;
+}
+
+.placement-rank.rank-3 {
+  color: #fb923c;
+}
+
+.placement-total {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+/* Thanh ray tiến độ cuộc đua */
+.race-progress-section {
+  flex: 1;
+  pointer-events: auto;
+  background: rgba(13, 32, 25, 0.88);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(67, 118, 92, 0.5);
+  border-radius: 12px;
+  padding: 6px 14px 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.race-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.track-distance-info {
+  font-size: 11px;
+  font-weight: 800;
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.15);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.race-track-rail {
+  position: relative;
+  height: 8px;
+  background: #1e293b;
+  border-radius: 999px;
+  overflow: visible;
+  border: 1px solid #334155;
+}
+
+.race-track-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #10b981 0%, #22c55e 70%, #4ade80 100%);
+  border-radius: 999px;
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+/* Chốt pin tay đua trên thanh tiến trình */
+.racer-pin {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 10;
+  transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.racer-pin-avatar {
+  font-size: 14px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.is-player-pin .racer-pin-avatar {
+  transform: scale(1.3);
+  filter: drop-shadow(0 0 6px rgba(74, 222, 128, 0.9));
+}
+
+.racer-pin-name {
+  display: none;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: rgba(15, 23, 42, 0.9);
+  color: #fff;
+  padding: 1px 4px;
+  border-radius: 4px;
+  margin-top: 2px;
+}
+
+.race-progress-section:hover .racer-pin-name {
+  display: block;
+}
+
+/* Thẻ tay đua dẫn đầu */
+.race-lead-card {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 32, 25, 0.88);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(67, 118, 92, 0.5);
+  border-radius: 12px;
+  padding: 4px 10px;
+  min-width: 82px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.lead-tag {
+  font-size: 9px;
+  font-weight: 800;
+  color: #fbbf24;
+  letter-spacing: 0.5px;
+}
+
+.lead-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f5f9;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 4. Banner Trạng Thái Bị Choáng (Stun) */
+.race-status-banner {
+  align-self: center;
+  margin-top: 8px;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(245, 158, 11, 0.95);
+  color: #78350f;
+  border: 1.5px solid #fbbf24;
+  border-radius: 10px;
+  padding: 6px 14px;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+  animation: stun-bounce 0.4s ease-out;
+}
+
+@keyframes stun-bounce {
+  0% { transform: scale(0.85); opacity: 0; }
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.status-banner-icon {
+  font-size: 20px;
+  animation: rotate-star 2s linear infinite;
+}
+
+@keyframes rotate-star {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.status-banner-body {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.status-banner-title {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.status-banner-desc {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* 5. Bottombar: Thanh Siêu Năng Lực & Cooldown */
+.race-hud-bottombar {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  pointer-events: none;
+  margin-bottom: 4px;
+}
+
+.race-abilities-dock {
+  pointer-events: auto;
+  display: flex;
+  gap: 10px;
+  background: rgba(13, 32, 25, 0.9);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(67, 118, 92, 0.6);
+  border-radius: 18px;
+  padding: 6px 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.race-ability-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  background: #1e293b;
+  border: 2px solid #475569;
+  border-radius: 14px;
+  color: #f8fafc;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+.race-ability-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: #22c55e;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
+}
+
+.race-ability-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.race-ability-btn.is-ready {
+  border-color: #10b981;
+}
+
+.race-ability-btn.is-active {
+  border-color: #38bdf8;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.7);
+  animation: active-glow 0.8s infinite alternate;
+}
+
+@keyframes active-glow {
+  from { box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+  to { box-shadow: 0 0 20px rgba(56, 189, 248, 0.9); }
+}
+
+.ability-key-hint {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 9px;
+  font-family: inherit;
+  font-weight: 800;
+  color: #94a3b8;
+  background: rgba(15, 23, 42, 0.8);
+  padding: 1px 3px;
+  border-radius: 4px;
+  border: 1px solid #334155;
+  line-height: 1;
+}
+
+.ability-icon {
+  font-size: 22px;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.ability-name {
+  font-size: 9px;
+  font-weight: 800;
+  margin-top: 2px;
+  color: #cbd5e1;
+  text-transform: uppercase;
+}
+
+/* Lớp phủ Cooldown */
+.ability-cooldown-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  z-index: 5;
+}
+
+.cooldown-counter {
+  font-size: 13px;
+  font-weight: 900;
+  color: #f59e0b;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.race-ability-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+/* 6. Modals cho 4 trạng thái phòng (Waiting, Disconnected, Finished) */
+.race-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 26, 20, 0.78);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+  pointer-events: auto;
+  padding: 16px;
+}
+
+.race-modal-box {
+  background: #0f241c;
+  border: 2px solid #234d3a;
+  border-radius: 18px;
+  padding: 24px 28px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  animation: modal-pop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+@keyframes modal-pop {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.race-modal-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #f8fafc;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.race-modal-desc {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.modal-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(74, 222, 128, 0.2);
+  border-top-color: #4ade80;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.waiting-racers-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.waiting-racer-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid #334155;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.modal-alert-icon, .victory-trophy {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.alert-title {
+  color: #ef4444;
+}
+
+.victory-title {
+  color: #fbbf24;
+  text-shadow: 0 0 12px rgba(251, 191, 36, 0.4);
+}
+
+.race-winner-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(251, 191, 36, 0.15);
+  border: 1.5px solid rgba(251, 191, 36, 0.5);
+  border-radius: 12px;
+  padding: 8px 16px;
+  width: 100%;
+}
+
+.winner-crown {
+  font-size: 18px;
+}
+
+.winner-label {
+  font-size: 13px;
+  color: #fde68a;
+}
+
+.winner-name {
+  font-size: 15px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.race-player-summary {
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.race-modal-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.btn-race-primary, .btn-race-secondary {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  border-radius: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.btn-race-primary {
+  background: #22c55e;
+  color: #0b1a14;
+}
+
+.btn-race-primary:hover {
+  background: #16a34a;
+  transform: translateY(-1px);
+}
+
+.btn-race-secondary {
+  background: #334155;
+  color: #f8fafc;
+}
+
+.btn-race-secondary:hover {
+  background: #475569;
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   DEMO TOOLBAR & DEMO SCREEN CONTAINER (Mô phỏng 960x540 vs Mobile 390px)
+   ========================================================================== */
+
+.race-hud-demo-wrapper {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #0b1a14;
+  align-items: center;
+  overflow: auto;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.demo-control-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  background: #132a21;
+  border: 1px solid #234d3a;
+  border-radius: 14px;
+  padding: 8px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 50;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.btn-toolbar {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-toolbar:hover {
+  background: #334155;
+  color: #fff;
+}
+
+.btn-toolbar.is-active {
+  background: #22c55e;
+  color: #0b1a14;
+  border-color: #22c55e;
+  font-weight: 800;
+}
+
+.btn-toggle-stun.is-active {
+  background: #f59e0b;
+  color: #78350f;
+  border-color: #f59e0b;
+}
+
+/* Khung màn hình Demo */
+.demo-screen-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.demo-screen-container.mode-standard .demo-canvas-simulated {
+  width: 960px;
+  height: 540px;
+}
+
+.demo-screen-container.mode-mobile .demo-canvas-simulated {
+  width: 390px;
+  height: 600px;
+  border-radius: 36px;
+  box-shadow: 0 0 0 10px #1e293b, 0 20px 50px rgba(0,0,0,0.6);
+}
+
+.demo-canvas-simulated {
+  position: relative;
+  background: radial-gradient(circle at 50% 30%, #17382c 0%, #0d2019 100%),
+              url('/images/game-background.png');
+  background-size: cover;
+  border: 2px solid #234d3a;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.simulated-gameplay-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+  opacity: 0.25;
+}
+
+.gameplay-tag {
+  font-size: 14px;
+  font-weight: 900;
+  color: #4ade80;
+  letter-spacing: 1px;
+}
+
+.gameplay-subtag {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   RESPONSIVE CHO MÀN HÌNH CHẠM HẸP (MOBILE / TOUCH SCREEN <= 600px)
+   ========================================================================== */
+
+@media (max-width: 600px), (max-aspect-ratio: 4/3) {
+  .race-hud-container {
+    padding: 6px 8px;
+  }
+
+  .race-placement-card {
+    min-width: 50px;
+    padding: 2px 6px;
+  }
+
+  .placement-rank {
+    font-size: 16px;
+  }
+
+  .race-lead-card {
+    display: none; /* Ẩn thẻ phụ trên màn hình hẹp để nhường chỗ thanh ray */
+  }
+
+  .race-progress-section {
+    padding: 4px 8px 8px;
+  }
+
+  .track-marker-start, .track-marker-finish {
+    display: none; /* Rút gọn text xuất phát / đích */
+  }
+
+  .race-abilities-dock {
+    gap: 6px;
+    padding: 4px 6px;
+  }
+
+  .race-ability-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+  }
+
+  .ability-icon {
+    font-size: 18px;
+  }
+
+  .ability-name {
+    font-size: 8px;
+  }
+
+  .ability-key-hint {
+    display: none; /* Ẩn phím tắt bàn phím trên thiết bị chạm */
+  }
+
+  .race-demo-badge {
+    top: 4px;
+    right: 8px;
+    font-size: 8px;
+    padding: 2px 6px;
+  }
+}
+
+/* ==========================================================================
+   SIMULATED GAMEPLAY STAGE (Sàn bệ & Nhân vật nhảy mẫu trong Demo)
+   ========================================================================== */
+
+.simulated-gameplay-stage {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sim-platform {
+  position: absolute;
+  width: 90px;
+  height: 20px;
+  transform: translateX(-50%);
+}
+
+.sim-platform img {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+.sim-platform.plat-2 {
+  animation: move-plat 3s ease-in-out infinite alternate;
+}
+
+@keyframes move-plat {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(20px); }
+}
+
+.sim-doodle-player {
+  position: absolute;
+  bottom: 100px;
+  left: 42%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: doodle-bounce 1.4s cubic-bezier(0.28, 0.84, 0.42, 1) infinite;
+  z-index: 2;
+}
+
+@keyframes doodle-bounce {
+  0%, 100% {
+    transform: translate(-50%, 0) scale(1, 0.9);
+  }
+  50% {
+    transform: translate(-50%, -130px) scale(0.95, 1.05);
+  }
+}
+
+.sim-doodle-sprite {
+  width: 44px;
+  height: 44px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+}
+
+.sim-doodle-name {
+  font-size: 10px;
+  font-weight: 800;
+  color: #4ade80;
+  background: rgba(15, 23, 42, 0.85);
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  white-space: nowrap;
+  margin-top: -2px;
+}
+
+.sim-bot-player {
+  position: absolute;
+  transform: translate(-50%, 0);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: bot-bounce 1.6s cubic-bezier(0.28, 0.84, 0.42, 1) infinite 0.4s;
+  z-index: 2;
+}
+
+@keyframes bot-bounce {
+  0%, 100% {
+    transform: translate(-50%, 0) scale(1, 0.9);
+  }
+  50% {
+    transform: translate(-50%, -100px) scale(0.95, 1.05);
+  }
+}
+
+.sim-bot-sprite {
+  width: 40px;
+  height: 40px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+}
+
+.sim-bot-name {
+  font-size: 10px;
+  font-weight: 800;
+  color: #c084fc;
+  background: rgba(15, 23, 42, 0.85);
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(192, 132, 252, 0.4);
+  white-space: nowrap;
+  margin-top: -2px;
+}
