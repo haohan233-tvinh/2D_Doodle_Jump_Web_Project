@@ -25,7 +25,25 @@ export function RaceHUDDemo() {
       cooldown: i === 1 ? 4.5 : 0, // Kỹ năng số 2 (Stun) đang có cooldown 4.5s demo
     }))
   );
-  const [screenMode, setScreenMode] = useState('standard'); // 'standard' (960x540) hoặc 'mobile' (390px)
+  const [screenMode, setScreenMode] = useState('fullscreen'); // 'fullscreen' (tối đa 16:9), 'stretch' (100% tràn viền), 'standard' (960x540) hoặc 'mobile' (390px)
+  const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
+
+  // Lắng nghe sự kiện F11 / Fullscreen của trình duyệt
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsBrowserFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  const toggleBrowserFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
 
   // Đếm ngược Cooldown và Hiệu ứng choáng tự động trong Demo
   useEffect(() => {
@@ -141,17 +159,43 @@ export function RaceHUDDemo() {
           <span className="toolbar-label">Khung hình:</span>
           <button
             type="button"
+            className={`btn-toolbar ${screenMode === 'fullscreen' ? 'is-active' : ''}`}
+            onClick={() => setScreenMode('fullscreen')}
+            title="Mở rộng tối đa theo màn hình (Tỉ lệ chuẩn 16:9)"
+          >
+            🖥️ Toàn màn hình
+          </button>
+          <button
+            type="button"
+            className={`btn-toolbar ${screenMode === 'stretch' ? 'is-active' : ''}`}
+            onClick={() => setScreenMode('stretch')}
+            title="Tràn viền 100% không gian cửa sổ"
+          >
+            ⛶ Tràn viền (100%)
+          </button>
+          <button
+            type="button"
             className={`btn-toolbar ${screenMode === 'standard' ? 'is-active' : ''}`}
             onClick={() => setScreenMode('standard')}
+            title="Kích thước pixel gốc 960x540"
           >
-            🖥️ 960x540
+            📺 960x540
           </button>
           <button
             type="button"
             className={`btn-toolbar ${screenMode === 'mobile' ? 'is-active' : ''}`}
             onClick={() => setScreenMode('mobile')}
+            title="Giao diện mô phỏng điện thoại di động"
           >
             📱 Mobile (390px)
+          </button>
+          <button
+            type="button"
+            className={`btn-toolbar btn-fs-toggle ${isBrowserFullscreen ? 'is-active' : ''}`}
+            onClick={toggleBrowserFullscreen}
+            title="Bật/Tắt chế độ Toàn Màn Hình của trình duyệt (F11)"
+          >
+            {isBrowserFullscreen ? '🗗 Thu nhỏ F11' : '⛶ F11 Toàn Màn Hình'}
           </button>
         </div>
       </aside>
@@ -161,31 +205,31 @@ export function RaceHUDDemo() {
         <div className="demo-canvas-simulated">
           {/* Nền mô phỏng game doodle jump sinh động */}
           <div className="simulated-gameplay-stage" aria-hidden="true">
-            {/* Các sàn bệ nhảy mẫu */}
-            <div className="sim-platform plat-1" style={{ bottom: '90px', left: '42%' }}>
+            {/* Các sàn bệ nhảy mẫu (sử dụng % để co giãn linh hoạt ở mọi độ phân giải) */}
+            <div className="sim-platform plat-1" style={{ bottom: '16%', left: '42%' }}>
               <img src="/images/skins/platform-standard.svg" alt="" />
             </div>
-            <div className="sim-platform plat-2" style={{ bottom: '180px', left: '26%' }}>
+            <div className="sim-platform plat-2" style={{ bottom: '32%', left: '26%' }}>
               <img src="/images/skins/platform-moving.svg" alt="" />
             </div>
-            <div className="sim-platform plat-3" style={{ bottom: '260px', left: '55%' }}>
+            <div className="sim-platform plat-3" style={{ bottom: '48%', left: '55%' }}>
               <img src="/images/skins/platform-standard.svg" alt="" />
             </div>
-            <div className="sim-platform plat-4" style={{ bottom: '340px', left: '35%' }}>
+            <div className="sim-platform plat-4" style={{ bottom: '63%', left: '35%' }}>
               <img src="/images/skins/platform-fragile.svg" alt="" />
             </div>
-            <div className="sim-platform plat-5" style={{ bottom: '410px', left: '48%' }}>
+            <div className="sim-platform plat-5" style={{ bottom: '77%', left: '48%' }}>
               <img src="/images/skins/platform-standard.svg" alt="" />
             </div>
 
             {/* Nhân vật Doodle nhảy nhót */}
-            <div className="sim-doodle-player">
+            <div className="sim-doodle-player" style={{ bottom: '18%', left: '42%' }}>
               <img src="/images/skins/doodle.svg" alt="" className="sim-doodle-sprite" />
               <span className="sim-doodle-name">Bạn (Doodle)</span>
             </div>
 
             {/* Đối thủ bot mô phỏng */}
-            <div className="sim-bot-player" style={{ bottom: '370px', left: '36%' }}>
+            <div className="sim-bot-player" style={{ bottom: '70%', left: '36%' }}>
               <img src="/images/skins/purple.svg" alt="" className="sim-bot-sprite" />
               <span className="sim-bot-name">Thầy Sơn 🧙‍♂️</span>
             </div>

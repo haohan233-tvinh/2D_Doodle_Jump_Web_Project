@@ -4,6 +4,22 @@ import { getJson } from '../services/api.js';
 // 0. COMPONENT TOP BAR (Thanh điều hướng tối trên cùng: Logo, Timer, Hint, Nút Chơi lại)
 export function TopBar({ elapsedMs = 0, phase = 'ready', onTogglePause, onRestart, onExitToMenu }) {
   const seconds = (Math.max(0, elapsedMs) / 1000).toFixed(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
+  const handleToggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+
   return (
     <header className="game-top-bar" aria-label="Thanh điều hướng trò chơi">
       <div className="top-bar-left">
@@ -22,6 +38,15 @@ export function TopBar({ elapsedMs = 0, phase = 'ready', onTogglePause, onRestar
       </div>
 
       <div className="top-bar-right">
+        <button
+          type="button"
+          className="btn-top-bar btn-top-fullscreen"
+          onClick={handleToggleFullscreen}
+          title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Bật toàn màn hình (F11)'}
+          aria-label="Bật hoặc tắt toàn màn hình"
+        >
+          {isFullscreen ? '🗗 Thu nhỏ' : '⛶ Toàn màn hình'}
+        </button>
         {onTogglePause && (
           <button
             type="button"
