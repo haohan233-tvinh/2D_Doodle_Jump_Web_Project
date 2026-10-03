@@ -1,64 +1,122 @@
 # Doodle Jump USTH
 
-Game leo cao Doodle Jump với bốn thầy đồng hành, chạy bằng **ReactJS + Canvas + Python Flask**. Chỉ người chơi có điểm và kỷ lục; các thầy không thi đua với người chơi.
+Game leo cao 2D (Doodle Jump) hiện đại với kiến trúc Decoupled Core, chế độ chơi đơn đồng hành cùng 4 giảng viên USTH và chế độ đua trực tuyến thời gian thực (Online Race V2).
 
-Repo chung: [2D_Doodle_Jump_Web_Project](https://github.com/haohan233-tvinh/2D_Doodle_Jump_Web_Project).
+Hệ thống được phát triển trên nền tảng **React 19**, **HTML5 Canvas 2D**, **Python 3.12 (Flask 3.1.3 + Flask-SocketIO 5.4.1)** và cơ sở dữ liệu **SQLite**.
 
-## Bắt đầu ở đâu?
+---
 
-1. Đọc [Hướng dẫn bắt đầu](docs/START_HERE.md).
-2. Bấm “Bắt đầu chơi” ở màn tiêu đề để camera trượt xuống, nhập nickname trong menu rồi bắt đầu lượt chơi. Skin được giữ theo hồ sơ người chơi.
-3. Dùng phím mũi tên hoặc A/D để điều khiển; trên màn hình cảm ứng dùng hai nút ở cạnh dưới.
+## 🎮 Chế Độ Trò Chơi (Game Modes)
 
-## Chạy trên Windows
+1. **Solo Mode (Chơi đơn đồng hành):**
+   - 4 giảng viên USTH đồng hành cùng người chơi dưới dạng AI bot (`catchUp`, bám theo camera, chờ người chơi).
+   - Bot không thi đua hay tranh giành điểm số với người chơi; bảng xếp hạng và lịch sử điểm chỉ ghi nhận thành tích của người thật.
+2. **Online Race V2 (Đua trực tuyến thời gian thực):**
+   - Đua leo cao đối kháng thời gian thực (2–4 người chơi) với hệ thống phòng chờ (lobby), đếm ngược đồng bộ và đồng bộ bóng đối thủ (Ghost Sync 10–15 Hz).
+   - Hộp kỹ năng tương tác trên đường đua: tăng tốc phản lực (`boost`), bắn đạn gây choáng (`stun`), dịch chuyển tức thời (`teleport`).
+   - Máy chủ đóng vai trò trọng tài tối cao (Server-authoritative): kiểm soát chống gian lận (Anti-cheat), kiểm tra thời gian tối thiểu ($T_{min} \ge 7500$ms) và các trạm kiểm soát (checkpoints) trước khi công nhận kết quả cán mốc độ cao 3000m.
+3. **Đa ngôn ngữ (i18n Localization):**
+   - Hỗ trợ thời gian thực 3 ngôn ngữ: **Tiếng Việt**, **Tiếng Anh (English)** và **Tiếng Pháp (Français)**; chuyển đổi trực tiếp trên thanh điều hướng hoặc menu mà không cần tải lại trang.
 
-Cần **Node.js 24 LTS**, **Python 3.12** (có lệnh `py`), **Git** và **VS Code**.
-Mở PowerShell tại thư mục này, chạy:
+---
 
-```powershell
-npm.cmd run setup
-npm.cmd run dev
+## 🏛️ Kiến Trúc Hệ Thống (Architecture Decisions)
+
+- **Nguyên tắc Decoupled Core:**
+  - Logic mô phỏng game ([`frontend/src/game/`](frontend/src/game/)) là Pure JavaScript Core Engine độc lập hoàn toàn với framework UI. Tuyệt đối không phụ thuộc React hay React hooks trong engine.
+  - Giao diện người dùng ([`frontend/src/pages/`](frontend/src/pages/), [`frontend/src/components/`](frontend/src/components/)) là lớp React thuần túy, chịu trách nhiệm kết xuất HUD, menu, điều phối phòng chờ và kết nối socket.
+- **Xử lý thời gian thực đa nền tảng (Realtime Concurrency):**
+  - Backend sử dụng `Flask-SocketIO` kết hợp `simple-websocket` ở chế độ **threading mode**.
+  - Quyết định loại bỏ `gevent` và `eventlet` nhằm khắc phục triệt để lỗi PEP 669 trên Python 3.12 và loại bỏ yêu cầu cài đặt C++ Build Tools phức tạp trên môi trường Windows.
+- **Ranh giới dữ liệu & Đồng bộ:**
+  - Lưu trữ SQLite giao dịch ([`backend/schema.sql`](backend/schema.sql), [`backend/db.py`](backend/db.py)) ghi nhận lịch sử lượt chơi (`/api/runs`) và bảng xếp hạng (`/api/leaderboard`) phân tách theo phiên bản luật (`v1` và `v2`).
+
+---
+
+## 🚀 Khởi Chạy Nhanh (Quickstart)
+
+### Yêu cầu môi trường
+- **Node.js:** `>= 24 LTS`
+- **Python:** `3.12`
+- **Git**
+
+### 1. Khởi chạy trực tiếp (Local Development)
+
+```bash
+# Cài đặt môi trường ảo Python, pip packages và npm packages
+npm run setup
+
+# Khởi chạy đồng thời Flask Backend (:3000) và Vite Frontend (:5173)
+npm run dev
 ```
 
-Mở **http://localhost:5173**. Giữ terminal đang chạy. Nhấn **Ctrl+C** để dừng hai dịch vụ.
+Truy cập giao diện: **http://localhost:5173** (API Flask hoạt động tại `http://127.0.0.1:3000`). Nhấn `Ctrl + C` để dừng cả hai tiến trình.
 
-Lần sau chỉ cần `npm.cmd run dev`. Sau khi đồng đội đổi thư viện, chạy lại setup.
-Frontend tự cập nhật khi lưu file; sau khi sửa Python, dừng dev rồi chạy lại.
+### 2. Khởi chạy bằng Docker Compose
 
-## Tính năng hiện có
+Hệ thống cung cấp sẵn kịch bản Docker Compose với volume lưu trữ cơ sở dữ liệu bền vững (`game-data`):
 
-| Phần | Trạng thái |
-|---|---|
-| Di chuyển, tự nhảy, va chạm bệ và camera cuộn | Hoạt động |
-| Bốn thầy chọn bệ riêng khi có lựa chọn phù hợp, bất tử, nhảy bắt kịp và chờ camera | Hoạt động |
-| Nhập nickname, giữ skin theo hồ sơ, tạm dừng và chơi lại | Hoạt động |
-| Chuyển cảnh tiêu đề, nhịp bật xuất phát, màn che khi chơi lại và về menu | Hoạt động |
-| Khung 16:9 tràn viền trên màn 16:9, giữ trọn khung trên màn khác tỷ lệ | Hoạt động |
-| Lưu kết quả, lịch sử cá nhân và bảng xếp hạng SQLite | Hoạt động |
-| API cấu hình luật, skin và bot | Hoạt động |
+```bash
+# Khởi chạy stack trong nền
+docker compose up --build -d
 
-Luật, skin và bot lấy từ `GET /api/config`. Sau mỗi lượt, frontend gửi kết quả người chơi tới `POST /api/runs`; menu có thể mở lịch sử cá nhân và bảng xếp hạng giữa những người chơi. Khi API chưa sẵn sàng, game vẫn chơi được nhưng không lưu lượt.
+# Kiểm tra tự động tính sẵn sàng của web, API, socket và dữ liệu
+python scripts/check-docker.py
 
-## Các thư mục
+# Xem logs dịch vụ
+docker compose logs -f
 
-- `frontend/src/pages/`: màn hình React.
-- `frontend/src/components/`: thành phần giao diện.
-- `frontend/src/game/`: code game chạy trong trình duyệt.
-- `backend/routes/`: route Flask.
-- `backend/schema.sql`: cấu trúc dữ liệu dự kiến.
-- `docs/`: hướng dẫn, công việc đầu tiên và quy ước API.
+# Dừng stack (giữ nguyên dữ liệu SQLite)
+docker compose down
 
-## Kiểm tra
-
-```powershell
-npm.cmd test
-npm.cmd run build
+# Dừng stack và xóa toàn bộ dữ liệu SQLite
+docker compose down -v
 ```
 
-`build` kiểm tra frontend đóng gói được; chưa phải triển khai website hoàn chỉnh.
-Quy trình nhóm: **branch từ dev → làm một việc → tự kiểm tra → gửi trưởng nhóm → ghép và kiểm tra bản chung → merge vào dev**.
-Mỗi người dùng [quy ước chung](docs/QUY_UOC_CHUNG.md), không cần kiểm tra chéo hay trao đổi thường xuyên với thành viên khác.
-Không đưa thư viện, `.venv`, cơ sở dữ liệu hay slide giảng viên vào Git.
+Truy cập ứng dụng đóng gói: **http://localhost:8080**.
 
-Danh sách nhóm hiện có 7 người; cần xác nhận với giảng viên vì slide ghi tối đa 6.
-Sau lần tải mã nguồn đầu tiên lên `main`, trưởng nhóm tạo nhánh `dev` từ `main` nếu chưa có và mời các thành viên vào repo.
+---
+
+## 🧪 Kiểm Thử & Đóng Gói (Testing & Build)
+
+Dự án áp dụng quy chuẩn kiểm thử tự động bắt buộc (Autonomous Verification) trước mọi cam kết mã nguồn:
+
+```bash
+# Chạy toàn bộ tests (Pytest Backend + Vitest Frontend)
+npm test
+
+# Kiểm tra tính toàn vẹn tài nguyên và đóng gói frontend
+npm run build
+```
+
+- **Backend tests:** [`backend/tests/`](backend/tests/) (kiểm tra REST API, hợp đồng dữ liệu, SQLite idempotency và Socket.IO events).
+- **Frontend tests:** [`frontend/src/tests/`](frontend/src/tests/) (kiểm tra vật lý, va chạm, bot AI, input, i18n và game engine).
+
+---
+
+## 🗺️ Điều Hướng & Tài Liệu Kỹ Thuật (Documentation & Ownership)
+
+Tài liệu dự án tuân thủ nguyên tắc: *Mã nguồn làm chủ WHAT/HOW; Tài liệu làm chủ WHY/WHERE*.
+
+| Tài liệu / Ranh giới | Mục đích & Điểm chạm |
+| :--- | :--- |
+| 📍 [`FEATURE_MAP.md`](FEATURE_MAP.md) | **Bản đồ GPS dự án:** Tra cứu 11 module tính năng, điểm chạm UI/Logic/Test và các ràng buộc cứng (Hard Negative Constraints). |
+| 📚 [`docs/README.md`](docs/README.md) | **Mục lục tài liệu kỹ thuật:** Tổng hợp toàn bộ tài liệu đặc tả, kiến trúc và hồ sơ phát triển. |
+| 🏁 [`docs/START_HERE.md`](docs/START_HERE.md) | Hướng dẫn onboarding chi tiết từng bước cho thành viên mới và thao tác Docker. |
+| 🔌 [`docs/API.md`](docs/API.md) | Đặc tả hợp đồng REST (`/api/*`) và các sự kiện Socket.IO thời gian thực (Race V2). |
+| ⚡ [`docs/ONLINE_RACE_BACKEND.md`](docs/ONLINE_RACE_BACKEND.md) | Thiết kế kiến trúc đồng bộ mạng, cơ chế phòng đua và thuật toán chống gian lận backend. |
+| 📐 [`docs/QUY_UOC_CHUNG.md`](docs/QUY_UOC_CHUNG.md) | Quy ước hằng số vật lý, hệ tọa độ màn hình và hành vi AI bot đồng hành. |
+| ⏱️ [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) | Pipeline chuẩn hóa tài nguyên sprite, tối ưu hóa bộ nhớ và vòng lặp render Canvas. |
+| 📋 [`docs/HUONG_DAN_ISSUES.md`](docs/HUONG_DAN_ISSUES.md) | Quy chuẩn quản lý luồng công việc nhánh `dev`, định dạng GitHub Issues và Pull Requests. |
+
+---
+
+## 📁 Cấu Trúc Thư Mục (Directory Layout)
+
+- [`frontend/src/game/`](frontend/src/game/): Core engine mô phỏng vật lý, máy trạng thái, AI bot và vòng lặp vẽ Canvas (Decoupled Core).
+- [`frontend/src/pages/`](frontend/src/pages/) & [`frontend/src/components/`](frontend/src/components/): Giao diện người dùng React 19 (HUD, Lobby, Menu, Modal).
+- [`frontend/src/locales/`](frontend/src/locales/): Từ điển bản địa hóa ngôn ngữ (`vi.json`, `en.json`, `fr.json`).
+- [`backend/routes/`](backend/routes/): Các endpoints REST API (`/api/config`, `/api/runs`, `/api/leaderboard`, `/api/rooms`).
+- [`backend/events/`](backend/events/): Bộ điều phối sự kiện Socket.IO cho Race V2 (`race`, `skills`, `finish`).
+- [`backend/schema.sql`](backend/schema.sql) & [`backend/db.py`](backend/db.py): Lược đồ cơ sở dữ liệu SQLite và bộ điều phối kết nối.
+- [`scripts/`](scripts/): Bộ công cụ tự động hóa cross-platform: cài đặt (`setup.mjs`), chạy dev (`dev.mjs`), test (`test.mjs`), kiểm tra Docker (`check-docker.py`).
